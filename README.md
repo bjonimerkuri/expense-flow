@@ -1,67 +1,69 @@
-# Expense Flow (Angular + NestJS + PostgreSQL)
+# Expense Flow
 
-An expense approval app. Employees submit expenses, managers approve or reject them, and finance marks approved ones as paid. A dashboard shows spend by category and status.
+Expense Flow is a small expense approval app. Employees submit expenses, managers review them, and finance records approved expenses as paid. It includes an Angular web app, a NestJS API, and a PostgreSQL database.
 
-## What it demonstrates
-**Angular**
-- **NgRx SignalStore** for feature state: loading, errors, pagination and filters live in one store.
-- **Optimistic updates with rollback:** approving or rejecting updates the UI immediately and restores the previous state if the API call fails.
-- Standalone components, signals, the new control flow, lazy-loaded routes, functional guards (including a role guard factory) and an HTTP interceptor.
-- Typed reactive forms, and a dashboard built with `toSignal`.
+## Requirements
 
-**NestJS**
-- Feature modules, dependency injection, DTO validation with class-validator, and a global `ValidationPipe`.
-- A custom `@CurrentUser()` decorator, a `@Roles()` decorator and a `RolesGuard` built on `Reflector`.
-- TypeORM entities with relations, transactions and **pessimistic locking** on status changes.
-- Swagger/OpenAPI docs at `/docs`, generated through the Nest Swagger plugin.
-
-**Business rules**
-- Status flow: `pending` to `approved` or `rejected`, then `approved` to `paid`. Rejected and paid are final.
-- **Separation of duties:** nobody can approve, reject or pay their own expense.
-- An **audit trail** (`expense_events`) records every status change with the actor and a note.
-- Money is stored as integer cents.
-- The rules live in pure functions with unit tests (Jest).
-
-## Stack
-Angular 18 · NgRx Signals · RxJS · NestJS 10 · TypeORM · PostgreSQL · JWT · Swagger · Jest
-
-## Roles
-| Role | Can do |
-|---|---|
-| employee | Submit expenses, see only their own |
-| manager | See all, approve or reject, view the dashboard |
-| finance | See all, mark approved expenses as paid, view the dashboard |
+- Node.js and npm
+- Docker Compose
 
 ## Run locally
-```bash
+
+Start PostgreSQL from the project root:
+
+```sh
 docker compose up -d
-cd api && npm install && npm run seed && npm run start:dev
-cd web && npm install && npm start
-cd api && npm test
 ```
-Open http://localhost:4200. API docs: http://localhost:3001/docs. Demo accounts (password `password123`): `employee@example.com`, `manager@example.com`, `finance@example.com`.
 
-## API
+In a terminal, install the API dependencies, add the sample accounts and expenses, and start the API:
+
+```sh
+cd api
+npm install
+npm run seed
+npm run start:dev
+```
+
+In a second terminal, start the web app:
+
+```sh
+cd web
+npm install
+npm start
+```
+
+Open <http://localhost:4200>. The API runs at <http://localhost:3001>, and its Swagger UI is at <http://localhost:3001/docs>.
+
+The seed command creates sample expenses and three accounts. Each account uses the password `password123`:
+
+- `employee@example.com`
+- `manager@example.com`
+- `finance@example.com`
+
+To run the API unit tests, use `npm test` from the `api` directory. Build commands are `npm run build` in either the `api` or `web` directory.
+
+## What you can do
+
+- Employees can submit expenses and view their own submissions.
+- Managers can view all expenses, approve or reject submissions, and view the dashboard.
+- Finance users can view all expenses, mark approved expenses as paid, and view the dashboard.
+- Status changes are recorded in an audit history. Users cannot approve, reject, or pay their own expenses.
+
+Expenses move from `pending` to `approved` or `rejected`; approved expenses can then move to `paid`. Rejected and paid expenses are final. Amounts are stored in cents.
+
+## API routes
+
 | Method | Route | Access |
-|---|---|---|
-| POST | `/auth/register`, `/auth/login` | public |
-| POST | `/expenses` | any user |
-| GET | `/expenses?status=&page=&pageSize=` | employees see their own, others see all |
-| GET | `/expenses/:id` | owner, manager or finance (includes history) |
-| POST | `/expenses/:id/approve` and `/reject` | manager |
-| POST | `/expenses/:id/pay` | finance |
-| GET | `/expenses/summary` | manager, finance |
+| --- | --- | --- |
+| `POST` | `/auth/register`, `/auth/login` | Public |
+| `POST` | `/expenses` | Any signed-in user |
+| `GET` | `/expenses?status=&page=&pageSize=` | Employees see their own; managers and finance see all |
+| `GET` | `/expenses/:id` | Owner, manager, or finance |
+| `POST` | `/expenses/:id/approve` | Manager |
+| `POST` | `/expenses/:id/reject` | Manager |
+| `POST` | `/expenses/:id/pay` | Finance |
+| `GET` | `/expenses/summary` | Manager or finance |
 
-## Decisions and trade-offs
-- **SignalStore instead of a full NgRx store:** less boilerplate for a feature of this size, with the same predictable state model.
-- **Optimistic updates** make the UI feel instant, and the rollback keeps it honest when the server rejects a change.
-- **Pessimistic locking** on the expense row prevents two reviewers from changing the same expense at once.
-- **`synchronize: true`** is for the demo. Production should use migrations.
-- **JWT in localStorage** keeps the demo simple. Prefer httpOnly cookies in production.
+## Notes
 
-## Limitations and next steps
-- [ ] API e2e tests against a real database, and Angular component tests
-- [ ] TypeORM migrations
-- [ ] Receipt uploads and email notifications
-- [ ] Multi-currency
-- [ ] Deploy a live demo and add the link and screenshots here
+The API uses TypeORM schema synchronization for local development. Use migrations before deploying to production. The default JWT secret and demo credentials are for local use only.
