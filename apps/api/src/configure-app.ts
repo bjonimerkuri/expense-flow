@@ -6,9 +6,10 @@ import { config } from './config';
 
 /** Shared by the local server (main.ts), the Vercel function (serverless.ts) and the e2e tests. */
 export function configureApp(app: INestApplication, options: { swaggerUi: boolean }) {
+  const server = app.getHttpAdapter().getInstance() as Express;
   // Vercel terminates TLS in front of the app; trust one proxy hop for client IPs.
-  (app.getHttpAdapter().getInstance() as Express).set('trust proxy', 1);
-  (app.getHttpAdapter().getInstance() as Express).disable('x-powered-by');
+  server.set('trust proxy', 1);
+  server.disable('x-powered-by');
 
   app.setGlobalPrefix('api');
   // Swagger UI needs inline scripts, so relax the CSP in development only.
@@ -24,11 +25,11 @@ export function configureApp(app: INestApplication, options: { swaggerUi: boolea
       .addBearerAuth()
       .build(),
   );
-  // /api/openapi.json is always available. The interactive UI is local-only: its static assets do not
-  // bundle cleanly into a serverless function.
-  SwaggerModule.setup('docs', app, document, {
-    useGlobalPrefix: true,
-    jsonDocumentUrl: 'openapi.json',
-    ui: options.swaggerUi,
+
+  // The OpenAPI document is always available. The interactive UI is local-only: its static assets do
+  // not bundle cleanly into a serverless function.
+  server.get('/api/openapi.json', (_req, res) => {
+    res.json(document);
   });
+  if (options.swaggerUi) SwaggerModule.setup('api/docs', app, document);
 }
