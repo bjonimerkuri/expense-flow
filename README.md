@@ -8,7 +8,7 @@
 Expense submission, approval and payment. Employees submit, managers approve or reject (with a reason), and finance
 marks approved expenses as paid. Every change is written to an audit trail.
 
-**[Live demo](https://REPLACE-WITH-YOUR-VERCEL-URL.vercel.app)** · demo accounts `employee@example.com`,
+**[Live demo](https://expense-flow-azure-nu.vercel.app/login)** · demo accounts `employee@example.com`,
 `manager@example.com`, `finance@example.com` (password `password123`; the sign-in page has one-click buttons).
 
 
