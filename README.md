@@ -11,11 +11,7 @@ marks approved expenses as paid. Every change is written to an audit trail.
 **[Live demo](https://REPLACE-WITH-YOUR-VERCEL-URL.vercel.app)** · demo accounts `employee@example.com`,
 `manager@example.com`, `finance@example.com` (password `password123`; the sign-in page has one-click buttons).
 
-![Manager queue](docs/screenshots/queue.png)
 
-| Sign in | Dashboard |
-|---|---|
-| ![Sign in](docs/screenshots/sign-in.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
 ## What is interesting here
 
@@ -44,7 +40,7 @@ flowchart LR
   Fn -- "TypeORM, pooled" --> DB[("PostgreSQL<br/>(Neon)")]
 ```
 
-More in [docs/architecture.md](docs/architecture.md) and the [decision records](docs/adr).
+More in [docs/architecture.md](docs/architecture.md).
 
 | Layer | Choices |
 |---|---|
@@ -72,7 +68,6 @@ npm run dev               # web http://localhost:4200, API http://localhost:3001
 | `npm test` / `npm run test:coverage` | Unit tests for the workflow rules and config |
 | `npm run test:int` | API integration tests against PostgreSQL |
 | `npm run e2e` | Playwright end-to-end tests (builds and starts both servers, resets the database) |
-| `npm run screenshots` | Regenerates the images above into `docs/screenshots` |
 | `npm run db:migrate` / `db:seed` / `db:reset` | Schema, demo data, wipe and reseed (never in production) |
 
 ## Testing strategy
@@ -102,23 +97,7 @@ OpenAPI document at `/api/openapi.json` (Swagger UI at `/api/docs` locally).
 | GET | `/expenses/summary` | manager, finance |
 | GET | `/health` | public |
 
-## Deploy to Vercel
 
-1. Push the repo to GitHub and import it in Vercel. Set **Framework Preset** to *Other*. The build settings come from
-   [`vercel.json`](vercel.json).
-2. In the project, open **Storage** (Marketplace) and add **Neon Postgres**. This sets `DATABASE_URL` for production
-   and creates an isolated database branch for each preview deployment.
-3. Add environment variables: `JWT_SECRET` (`openssl rand -base64 48`) and, for a demo site, `SEED_DEMO_DATA=true`.
-4. Deploy. The build compiles the API, runs migrations (and seeds the demo accounts), builds Angular, and publishes
-   `/api` as a function.
-5. Put the live URL at the top of this README and replace `bjonimerkuri` in the badges.
-
-## Decisions and trade-offs
-
-- [TypeORM migrations instead of `synchronize`](docs/adr/0001-typeorm-migrations-not-synchronize.md)
-- [One Vercel project, NestJS as a function](docs/adr/0002-one-vercel-project-nest-as-a-function.md)
-- [Rules on the server, `actions` in the API](docs/adr/0003-rules-on-the-server.md)
-- [JWT bearer auth and its limits](docs/adr/0004-jwt-bearer-auth.md)
 
 
 
