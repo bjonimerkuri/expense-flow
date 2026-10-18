@@ -1,0 +1,41 @@
+{
+  "name": "expense-flow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Expense approval app: Angular, NestJS and PostgreSQL, with separation of duties and an audit trail.",
+  "license": "MIT",
+  "engines": { "node": ">=20" },
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run start:dev -w @expense-flow/api",
+    "dev:web": "npm run start -w @expense-flow/web",
+    "build": "npm run build -w @expense-flow/api && npm run build -w @expense-flow/web",
+    "vercel-build": "node scripts/vercel-build.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "npm run typecheck -w @expense-flow/api && npm run typecheck -w @expense-flow/web",
+    "test": "npm test -w @expense-flow/api",
+    "test:coverage": "npm test -w @expense-flow/api -- --coverage",
+    "test:int": "npm run test:int -w @expense-flow/api",
+    "e2e": "playwright test",
+    "screenshots": "playwright test -c playwright.screenshots.config.ts",
+    "db:migrate": "npm run db:migrate -w @expense-flow/api",
+    "db:seed": "npm run db:seed -w @expense-flow/api",
+    "db:reset": "npm run db:reset -w @expense-flow/api",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@eslint/js": "^9.12.0",
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.14.0",
+    "angular-eslint": "^18.4.0",
+    "concurrently": "^9.0.0",
+    "eslint": "^9.12.0",
+    "prettier": "^3.3.0",
+    "typescript": "~5.5.0",
+    "typescript-eslint": "^8.8.0"
+  }
+}
