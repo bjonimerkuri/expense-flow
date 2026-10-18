@@ -21,7 +21,7 @@ import { Category, Status, SummaryRow } from '../core/models';
               <li class="bar-row">
                 <span>{{ categoryLabel[$any(row.category)] ?? row.category }}</span>
                 <span class="bar-track" aria-hidden="true">
-                  <span class="bar-fill" [style.width.%]="percent(row, s.byCategory)" style="></span>
+                  <span class="bar-fill" [style.width.%]="percent(row, s.byCategory)"></span>
                 </span>
                 <span class="bar-value">
                   {{ row.total / 100 | currency: 'EUR' }} <small>({{ row.count }})</small>
@@ -40,7 +40,7 @@ import { Category, Status, SummaryRow } from '../core/models';
               <li class="bar-row">
                 <span>{{ statusLabel[$any(row.status)] ?? row.status }}</span>
                 <span class="bar-track" aria-hidden="true">
-                  <span class="bar-fill" [style.width.%]="percent(row, s.byStatus)" style="></span>
+                  <span class="bar-fill" [style.width.%]="percent(row, s.byStatus)"></span>
                 </span>
                 <span class="bar-value">
                   {{ row.total / 100 | currency: 'EUR' }} <small>({{ row.count }})</small>
