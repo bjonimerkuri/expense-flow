@@ -1,7 +1,7 @@
 # Expense Flow
 
-[![CI](https://github.com/OWNER/expense-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/expense-flow/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/OWNER/expense-flow/actions/workflows/codeql.yml/badge.svg)](https://github.com/OWNER/expense-flow/actions/workflows/codeql.yml)
+[![CI](https://github.com/bjonimerkuri/expense-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/bjonimerkuri/expense-flow/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/bjonimerkuri/expense-flow/actions/workflows/codeql.yml/badge.svg)](https://github.com/bjonimerkuri/expense-flow/actions/workflows/codeql.yml)
 ![Node](https://img.shields.io/badge/node-20-339933)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -96,7 +96,7 @@ OpenAPI document at `/api/openapi.json` (Swagger UI at `/api/docs` locally).
 | POST | `/auth/register`, `/auth/login` | public, rate limited |
 | GET | `/expenses?status=&page=&pageSize=` | employees see their own; managers and finance see all |
 | POST | `/expenses` | any user (amount in integer cents) |
-| GET | `/expenses/:id` | owner or reviewer, with history; `404` otherwise |
+| GET | `/expenses/:id` | bjonimerkuri or reviewer, with history; `404` otherwise |
 | POST | `/expenses/:id/approve`, `/reject` | manager, not on their own expense |
 | POST | `/expenses/:id/pay` | finance, approved expenses only |
 | GET | `/expenses/summary` | manager, finance |
@@ -111,7 +111,7 @@ OpenAPI document at `/api/openapi.json` (Swagger UI at `/api/docs` locally).
 3. Add environment variables: `JWT_SECRET` (`openssl rand -base64 48`) and, for a demo site, `SEED_DEMO_DATA=true`.
 4. Deploy. The build compiles the API, runs migrations (and seeds the demo accounts), builds Angular, and publishes
    `/api` as a function.
-5. Put the live URL at the top of this README and replace `OWNER` in the badges.
+5. Put the live URL at the top of this README and replace `bjonimerkuri` in the badges.
 
 ## Decisions and trade-offs
 
@@ -120,13 +120,7 @@ OpenAPI document at `/api/openapi.json` (Swagger UI at `/api/docs` locally).
 - [Rules on the server, `actions` in the API](docs/adr/0003-rules-on-the-server.md)
 - [JWT bearer auth and its limits](docs/adr/0004-jwt-bearer-auth.md)
 
-## Roadmap
 
-- [ ] Receipt attachments (object storage)
-- [ ] Multi-currency amounts
-- [ ] Move the session token to an httpOnly cookie with CSRF protection
-- [ ] Shared rate-limit store and refresh tokens
-- [ ] Email notifications on status changes
 
 ## License
 
