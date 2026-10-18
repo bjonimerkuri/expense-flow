@@ -3,7 +3,7 @@ import { Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ExpenseApi } from '../core/expense.api';
 import { CATEGORY_LABEL, STATUS_LABEL } from '../core/labels';
-import { Category, Status, SummaryRow } from '../core/models';
+import { SummaryRow } from '../core/models';
 
 @Component({
   selector: 'app-dashboard',
@@ -19,7 +19,7 @@ import { Category, Status, SummaryRow } from '../core/models';
           <ul class="bars">
             @for (row of s.byCategory; track row.category) {
               <li class="bar-row">
-                <span>{{ categoryLabel[$any(row.category)] ?? row.category }}</span>
+                <span>{{ label(categoryLabel, row.category) }}</span>
                 <span class="bar-track" aria-hidden="true">
                   <span class="bar-fill" [style.width.%]="percent(row, s.byCategory)"></span>
                 </span>
@@ -38,7 +38,7 @@ import { Category, Status, SummaryRow } from '../core/models';
           <ul class="bars">
             @for (row of s.byStatus; track row.status) {
               <li class="bar-row">
-                <span>{{ statusLabel[$any(row.status)] ?? row.status }}</span>
+                <span>{{ label(statusLabel, row.status) }}</span>
                 <span class="bar-track" aria-hidden="true">
                   <span class="bar-fill" [style.width.%]="percent(row, s.byStatus)"></span>
                 </span>
@@ -59,8 +59,12 @@ import { Category, Status, SummaryRow } from '../core/models';
 })
 export class DashboardComponent {
   readonly summary = toSignal(inject(ExpenseApi).summary());
-  readonly categoryLabel: Record<Category, string> = CATEGORY_LABEL;
-  readonly statusLabel: Record<Status, string> = STATUS_LABEL;
+  readonly categoryLabel: Record<string, string> = CATEGORY_LABEL;
+  readonly statusLabel: Record<string, string> = STATUS_LABEL;
+
+  label(labels: Record<string, string>, key: string | undefined) {
+    return (key && labels[key]) || key || '';
+  }
 
   percent(row: SummaryRow, rows: SummaryRow[]) {
     const max = Math.max(1, ...rows.map((r) => r.total));
