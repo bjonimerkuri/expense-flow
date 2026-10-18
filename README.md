@@ -1,69 +1,133 @@
 # Expense Flow
 
-Expense Flow is a small expense approval app. Employees submit expenses, managers review them, and finance records approved expenses as paid. It includes an Angular web app, a NestJS API, and a PostgreSQL database.
+[![CI](https://github.com/OWNER/expense-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/expense-flow/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/OWNER/expense-flow/actions/workflows/codeql.yml/badge.svg)](https://github.com/OWNER/expense-flow/actions/workflows/codeql.yml)
+![Node](https://img.shields.io/badge/node-20-339933)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-## Requirements
+Expense submission, approval and payment. Employees submit, managers approve or reject (with a reason), and finance
+marks approved expenses as paid. Every change is written to an audit trail.
 
-- Node.js and npm
-- Docker Compose
+**[Live demo](https://REPLACE-WITH-YOUR-VERCEL-URL.vercel.app)** · demo accounts `employee@example.com`,
+`manager@example.com`, `finance@example.com` (password `password123`; the sign-in page has one-click buttons).
 
-## Run locally
+![Manager queue](docs/screenshots/queue.png)
 
-Start PostgreSQL from the project root:
+| Sign in | Dashboard |
+|---|---|
+| ![Sign in](docs/screenshots/sign-in.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
-```sh
-docker compose up -d
+## What is interesting here
+
+- **Separation of duties.** The right role must perform each step, and nobody can act on their own expense, even a
+  manager. The rules are pure functions with unit tests, and the API returns each expense's allowed `actions` so the UI
+  never re-implements them.
+- **Safe under concurrency.** Transitions run in a transaction with a row lock. Two reviewers acting at once cannot both
+  win; an integration test fires both requests together.
+- **Honest money.** Amounts are integer cents with a database `CHECK (amount > 0)`, and the UI rounds safely.
+- **Audit trail.** Each status change records who did it, when, and why. The expense page shows the history.
+- **Migrations, not `synchronize`.** Hand-written TypeORM migrations carry `CHECK` constraints, foreign keys and indexes,
+  and run under an advisory lock in the deploy build.
+- **Production-minded API.** Fail-fast env validation, `helmet`, request IDs with redacted structured logs, rate-limited
+  auth, pinned JWT algorithm, timing-safe login, `forbidNonWhitelisted` validation (a client cannot self-assign a role),
+  `/api/health`, OpenAPI document at `/api/openapi.json`.
+- **Modern Angular.** Standalone components, signals, new control flow, lazy routes with a role guard, optimistic
+  updates that roll back on failure (covered by an e2e test).
+- **Accessible.** Labelled controls, skip link, live regions, visible focus, status as text plus colour, tabular figures
+  for money, and axe checks in the e2e suite.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Browser["Angular SPA<br/>(static files)"] -- "/api/*" --> Fn["NestJS app<br/>(Vercel function)"]
+  Fn -- "TypeORM, pooled" --> DB[("PostgreSQL<br/>(Neon)")]
 ```
 
-In a terminal, install the API dependencies, add the sample accounts and expenses, and start the API:
+More in [docs/architecture.md](docs/architecture.md) and the [decision records](docs/adr).
 
-```sh
-cd api
-npm install
-npm run seed
-npm run start:dev
+| Layer | Choices |
+|---|---|
+| Web | Angular 18, RxJS, TypeScript, self-hosted variable font |
+| API | Node 20, NestJS 10, TypeORM, class-validator, JWT, bcrypt, pino, helmet, throttler, Swagger |
+| Data | PostgreSQL 16 |
+| Quality | Jest, Supertest, Playwright, axe, ESLint (with Angular a11y rules), Prettier, GitHub Actions, CodeQL, Dependabot |
+| Hosting | Vercel (static + serverless function), Neon Postgres |
+
+## Run it locally
+
+Requires Node 20 and Docker.
+
+```bash
+docker compose up -d      # PostgreSQL, with expenses and expenses_test databases
+npm ci
+npm run db:migrate && npm run db:seed
+npm run dev               # web http://localhost:4200, API http://localhost:3001/api, Swagger UI /api/docs
 ```
 
-In a second terminal, start the web app:
+| Script | What it does |
+|---|---|
+| `npm run dev` | API and web app with reload |
+| `npm run check` | Format check, lint, typecheck, unit tests, build |
+| `npm test` / `npm run test:coverage` | Unit tests for the workflow rules and config |
+| `npm run test:int` | API integration tests against PostgreSQL |
+| `npm run e2e` | Playwright end-to-end tests (builds and starts both servers, resets the database) |
+| `npm run screenshots` | Regenerates the images above into `docs/screenshots` |
+| `npm run db:migrate` / `db:seed` / `db:reset` | Schema, demo data, wipe and reseed (never in production) |
 
-```sh
-cd web
-npm install
-npm start
-```
+## Testing strategy
 
-Open <http://localhost:4200>. The API runs at <http://localhost:3001>, and its Swagger UI is at <http://localhost:3001/docs>.
+| Level | What it proves | Where |
+|---|---|---|
+| Unit | Status flow, roles, separation of duties, config validation | `apps/api/src/*.spec.ts` |
+| Integration | Auth, visibility, full workflow over HTTP, concurrent reviewers, audit trail, summaries | `apps/api/test/` |
+| End-to-end | Employee, manager and finance flows in a real browser, role access, rollback, accessibility | `e2e/tests/` |
 
-The seed command creates sample expenses and three accounts. Each account uses the password `password123`:
+CI runs three parallel jobs (quality, integration, e2e) against PostgreSQL service containers and uploads the Playwright
+report on failure.
 
-- `employee@example.com`
-- `manager@example.com`
-- `finance@example.com`
+## API
 
-To run the API unit tests, use `npm test` from the `api` directory. Build commands are `npm run build` in either the `api` or `web` directory.
-
-## What you can do
-
-- Employees can submit expenses and view their own submissions.
-- Managers can view all expenses, approve or reject submissions, and view the dashboard.
-- Finance users can view all expenses, mark approved expenses as paid, and view the dashboard.
-- Status changes are recorded in an audit history. Users cannot approve, reject, or pay their own expenses.
-
-Expenses move from `pending` to `approved` or `rejected`; approved expenses can then move to `paid`. Rejected and paid expenses are final. Amounts are stored in cents.
-
-## API routes
+Routes are under `/api` and, except auth and health, need `Authorization: Bearer <token>`. The full contract is the
+OpenAPI document at `/api/openapi.json` (Swagger UI at `/api/docs` locally).
 
 | Method | Route | Access |
-| --- | --- | --- |
-| `POST` | `/auth/register`, `/auth/login` | Public |
-| `POST` | `/expenses` | Any signed-in user |
-| `GET` | `/expenses?status=&page=&pageSize=` | Employees see their own; managers and finance see all |
-| `GET` | `/expenses/:id` | Owner, manager, or finance |
-| `POST` | `/expenses/:id/approve` | Manager |
-| `POST` | `/expenses/:id/reject` | Manager |
-| `POST` | `/expenses/:id/pay` | Finance |
-| `GET` | `/expenses/summary` | Manager or finance |
+|---|---|---|
+| POST | `/auth/register`, `/auth/login` | public, rate limited |
+| GET | `/expenses?status=&page=&pageSize=` | employees see their own; managers and finance see all |
+| POST | `/expenses` | any user (amount in integer cents) |
+| GET | `/expenses/:id` | owner or reviewer, with history; `404` otherwise |
+| POST | `/expenses/:id/approve`, `/reject` | manager, not on their own expense |
+| POST | `/expenses/:id/pay` | finance, approved expenses only |
+| GET | `/expenses/summary` | manager, finance |
+| GET | `/health` | public |
 
-## Notes
+## Deploy to Vercel
 
-The API uses TypeORM schema synchronization for local development. Use migrations before deploying to production. The default JWT secret and demo credentials are for local use only.
+1. Push the repo to GitHub and import it in Vercel. Set **Framework Preset** to *Other*. The build settings come from
+   [`vercel.json`](vercel.json).
+2. In the project, open **Storage** (Marketplace) and add **Neon Postgres**. This sets `DATABASE_URL` for production
+   and creates an isolated database branch for each preview deployment.
+3. Add environment variables: `JWT_SECRET` (`openssl rand -base64 48`) and, for a demo site, `SEED_DEMO_DATA=true`.
+4. Deploy. The build compiles the API, runs migrations (and seeds the demo accounts), builds Angular, and publishes
+   `/api` as a function.
+5. Put the live URL at the top of this README and replace `OWNER` in the badges.
+
+## Decisions and trade-offs
+
+- [TypeORM migrations instead of `synchronize`](docs/adr/0001-typeorm-migrations-not-synchronize.md)
+- [One Vercel project, NestJS as a function](docs/adr/0002-one-vercel-project-nest-as-a-function.md)
+- [Rules on the server, `actions` in the API](docs/adr/0003-rules-on-the-server.md)
+- [JWT bearer auth and its limits](docs/adr/0004-jwt-bearer-auth.md)
+
+## Roadmap
+
+- [ ] Receipt attachments (object storage)
+- [ ] Multi-currency amounts
+- [ ] Move the session token to an httpOnly cookie with CSRF protection
+- [ ] Shared rate-limit store and refresh tokens
+- [ ] Email notifications on status changes
+
+## License
+
+[MIT](LICENSE)
